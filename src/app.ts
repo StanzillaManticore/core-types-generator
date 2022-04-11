@@ -16,7 +16,7 @@ import { TypeParameter } from './TypeParameter';
 import { TypeReturn } from './TypeReturn';
 import { TypeEnum } from './TypeEnum';
 
-const ENVIRONMENT = 'Test';
+const ENVIRONMENT = 'Prod';
 const BASE_URL = `https://manticore${ENVIRONMENT.toLowerCase()}.blob.core.windows.net`;
 const VERSION_ENDPOINT = `${BASE_URL}/builds/${ENVIRONMENT}-latest_client_build.txt`;
 
