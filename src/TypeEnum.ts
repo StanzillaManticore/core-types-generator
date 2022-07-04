@@ -15,7 +15,7 @@ export class TypeEnum {
   private getAnnotation(): string {
     return getAnnotation(
       'class',
-      this.name,
+      this.name + ' : integer',
       `@${getShortDescription(this.description)}`
     );
   }
