@@ -527,6 +527,12 @@ CameraCapture = {}
 --- @field b number @The Blue component of the Color.
 --- @field a number @The Alpha (transparency) component of the Color.
 --- @field type string
+--- @operator add(Color): Color @ Component-wise addition.
+--- @operator sub(Color): Color @ Component-wise subtraction.
+--- @operator mul(Color): Color @ Multiplication operator.
+--- @operator mul(number): Color @ Multiplication operator.
+--- @operator div(Color): Color @ Division operator.
+--- @operator div(number): Color @ Division operator.
 local ColorInstance = {}
 --- Returns the desaturated version of the Color. 0 represents no desaturation and 1 represents full desaturation.
 --- @param desaturation number
@@ -1073,6 +1079,17 @@ function CoreObjectInstance:SetNetworkedCustomProperty(propertyName, propertyVal
 --- @param propertyName string
 --- @return boolean
 function CoreObjectInstance:IsCustomPropertyDynamic(propertyName) end
+
+--- Returns `true` if the object has replication enabled, else returns `false`.
+--- @return boolean
+function CoreObjectInstance:IsReplicationEnabled() end
+
+--- Enables/Disables replication for the networked object.
+--- @param isReplicationEnabled boolean
+function CoreObjectInstance:SetReplicationEnabled(isReplicationEnabled) end
+
+--- If the networked object does not have replication enabled and this call is made, this will force it to replicate its current state.
+function CoreObjectInstance:ForceReplication() end
 
 --- @param typeName string
 --- @return boolean
@@ -2144,15 +2161,6 @@ PhysicsObject = {}
 --- @field defaultRotationRate number @Determines how quickly the Player turns to match the camera's look. Set to -1 for immediate rotation. Currently only supports rotation around the Z-axis.
 --- @field type string
 local PlayerInstance = {}
---- If the player is in a party, returns a PartyInfo object with data about that party.
---- @return PartyInfo
-function PlayerInstance:GetPartyInfo() end
-
---- Returns whether both players are in the same public party.
---- @param player Player
---- @return boolean
-function PlayerInstance:IsInPartyWith(player) end
-
 --- The absolute Transform of this player.
 --- @return Transform
 function PlayerInstance:GetWorldTransform() end
@@ -2429,6 +2437,15 @@ function PlayerInstance:GetJoinTransferData() end
 --- @return PlayerTransferData
 function PlayerInstance:GetLeaveTransferData() end
 
+--- If the player is in a party, returns a PartyInfo object with data about that party.
+--- @return PartyInfo
+function PlayerInstance:GetPartyInfo() end
+
+--- Returns whether both players are in the same public party.
+--- @param player Player
+--- @return boolean
+function PlayerInstance:IsInPartyWith(player) end
+
 --- Sets the private networked data for this player associated with the key. Value can be any type that could be sent with a networked event. Each key is replicated independently, and this data is only sent to the owning player.
 --- @param key string
 --- @param value any
@@ -2493,6 +2510,7 @@ PlayerStart = {}
 --- @field gameId string @The ID of the game the player joined from or left to join. Returns `nil` if the player joined while not already connected to a game or left for a reason other than joining another game. Also returns `nil` if the player has opted out of sharing this information.
 --- @field sceneId string @The scene ID that the player joined from or left to join. May return `nil`.
 --- @field sceneName string @The scene name that the player joined from or left to join. May return `nil`.
+--- @field spawnKey string @The spawn key used when transferring a player to another scene. May return `nil`.
 --- @field type string
 local PlayerTransferDataInstance = {}
 --- @param typeName string
@@ -2581,6 +2599,13 @@ function Projectile.Spawn(templateId, startPosition, direction) end
 --- @field z number @The `z` component of the Quaternion.
 --- @field w number @The `w` component of the Quaternion.
 --- @field type string
+--- @operator add(Quaternion): Quaternion @ Component-wise addition.
+--- @operator sub(Quaternion): Quaternion @ Component-wise subtraction.
+--- @operator mul(Vector3): Vector3 @ Multiplication operator.
+--- @operator mul(number): Quaternion @ Multiplication operator.
+--- @operator mul(Quaternion): Quaternion @ Multiplication operator.
+--- @operator div(number): Quaternion @ Divides each component of the Quaternion by the right-side number.
+--- @operator unm: Quaternion @ Returns the inverse rotation.
 local QuaternionInstance = {}
 --- Get the Rotation representation of the Quaternion.
 --- @return Rotation
@@ -2708,6 +2733,12 @@ function Rectangle.New(vector) end
 --- @field y number @The `y` component of the Rotation.
 --- @field z number @The `z` component of the Rotation.
 --- @field type string
+--- @operator add(Rotation): Rotation @ Add two Rotations together. Note that this adds the individual components together, and may not provide the same result as if the two Rotations were applied in sequence.
+--- @operator sub(Rotation): Rotation @ Subtract a Rotation.
+--- @operator mul(Rotation): Rotation @ Multiplication operator.
+--- @operator mul(Vector3): Vector3 @ Multiplication operator.
+--- @operator mul(number): Rotation @ Multiplication operator.
+--- @operator unm: Rotation @ Returns the inverse rotation.
 local RotationInstance = {}
 --- @param typeName string
 --- @return boolean
@@ -2969,6 +3000,8 @@ Terrain = {}
 
 --- @class Transform @Transforms represent the position, rotation, and scale of objects in the game. They are immutable, but new Transforms can be created when you want to change an object's Transform.
 --- @field type string
+--- @operator mul(Quaternion): Transform @ Multiplication operator.
+--- @operator mul(Transform): Transform @ Multiplication operator.
 local TransformInstance = {}
 --- Returns a copy of the Rotation component of the Transform.
 --- @return Rotation
@@ -3187,6 +3220,7 @@ UIButton = {}
 --- @field opacity number @Controls the opacity of the container's contents by multiplying the alpha component of descendants' colors. Note that other UIPanels and UIContainers in the hierarchy may also contribute their own opacity values. A resulting alpha value of 1 or greater is fully opaque, 0 is fully transparent.
 --- @field cylinderArcAngle number @When the container is rendered in 3D space, this adjusts the curvature of the canvas in degrees. Changing this value will force a redraw.
 --- @field useSafeArea boolean @When `true`, the size and position of the container is inset to avoid overlapping with a device's display elements, such as a mobile phone's notch. When `false`, the container is the same size and shape as the device's display regardless of a device's display features. This property has no effect on containers rendered in 3D space.
+--- @field isScreenSpace boolean @When `true`, this container is rendered in screen space. When `false`, it is rendered in 3D world space. Defaults to `true`.
 --- @field type string
 local UIContainerInstance = {}
 --- Returns the size of the canvas when drawn in 3D space.
@@ -3572,12 +3606,111 @@ function UITextInstance:IsA(typeName) end
 --- @class GlobalUIText : UIControl @A UIControl which displays a basic text label. Inherits from [UIControl](uicontrol.md).
 UIText = {}
 
+--- @class UITextEntry : UIControl @A UIControl which provides an editable text input field. Inherits from [UIControl](uicontrol.md).
+--- @field textCommittedEvent Event @Fired when the control loses focus and text in the control is committed.
+--- @field textChangedEvent Event @Fired when text in the control is changed.
+--- @field pinchStartedEvent Event @Fired when the player begins a pinching gesture on the control on a touch input device. `Input.GetPinchValue()` may be polled during the pinch gesture to determine how far the player has pinched.
+--- @field pinchStoppedEvent Event @Fired when the player ends a pinching gesture on a touch input device.
+--- @field rotateStartedEvent Event @Fired when the player begins a rotating gesture on the control on a touch input device. `Input.GetRotateValue()` may be polled during the rotate gesture to determine how far the player has rotated.
+--- @field rotateStoppedEvent Event @Fired when the player ends a rotating gesture on a touch input device.
+--- @field touchStartedEvent Event @Fired when the player starts touching the control on a touch input device. Parameters are the screen location of the touch and a touch index used to distinguish between separate touches on a multitouch device.
+--- @field touchStoppedEvent Event @Fired when the player stops touching the control on a touch input device. Parameters are the screen location from which the touch was released and a touch index used to distinguish between separate touches on a multitouch device.
+--- @field tappedEvent Event @Fired when the player taps the control on a touch input device. Parameters are the screen location of the tap and the touch index with which the tap was performed.
+--- @field flickedEvent Event @Fired when the player performs a quick flicking gesture on the control on a touch input device. The `angle` parameter indicates the direction of the flick. 0 indicates a flick to the right. Values increase in degrees counter-clockwise, so 90 indicates a flick straight up, 180 indicates a flick to the left, etc.
+--- @field text string @The actual text string to show.
+--- @field promptText string @Text to be displayed in the input box when `text` is empty.
+--- @field isInteractable boolean @Returns whether the control can interact with the cursor (click, hover, etc).
+--- @field fontSize number @The font size of the control.
+--- @field isHittable boolean @When set to `true`, this control can receive input from the cursor and blocks input to controls behind it. When set to `false`, the cursor ignores this control and can interact with controls behind it.
+--- @field type string
+local UITextEntryInstance = {}
+--- Returns the color of the Text.
+--- @return Color
+function UITextEntryInstance:GetFontColor() end
+
+--- Sets the color of the Text.
+--- @param color Color
+function UITextEntryInstance:SetFontColor(color) end
+
+--- Returns the color of the text's background image.
+--- @return Color
+function UITextEntryInstance:GetBackgroundColor() end
+
+--- Sets the color of the text's background image.
+--- @param color Color
+function UITextEntryInstance:SetBackgroundColor(color) end
+
+--- Returns the color of the text's background image when hovering over it.
+--- @return Color
+function UITextEntryInstance:GetHoveredColor() end
+
+--- Sets the color of the text's background image when hovering over it.
+--- @param color Color
+function UITextEntryInstance:SetHoveredColor(color) end
+
+--- Returns the color of the text's background image when the text has focus.
+--- @return Color
+function UITextEntryInstance:GetFocusedColor() end
+
+--- Sets the color of the text's background image when the text has focus.
+--- @param color Color
+function UITextEntryInstance:SetFocusedColor(color) end
+
+--- Returns the color of the text's background image when the control is disabled.
+--- @return Color
+function UITextEntryInstance:GetDisabledColor() end
+
+--- Sets the color of the text's background image when the control is disabled.
+--- @param color Color
+function UITextEntryInstance:SetDisabledColor(color) end
+
+--- Returns the highlight color used when selecting text in the control.
+--- @return Color
+function UITextEntryInstance:GetFontSelectionColor() end
+
+--- Sets the highlight color used when selecting text in the control.
+--- @param color Color
+function UITextEntryInstance:SetFontSelectionColor(color) end
+
+--- Sets the image used as the background for the control.
+--- @param imageId string
+function UITextEntryInstance:SetImage(imageId) end
+
+--- Sets the text to use the specified font asset.
+--- @param font string
+function UITextEntryInstance:SetFont(font) end
+
+--- Gives keyboard focus to the control.
+function UITextEntryInstance:Focus() end
+
+--- Returns the touch index currently interacting with this control. Returns `nil` if the control is not currently being interacted with.
+--- @return number
+function UITextEntryInstance:GetCurrentTouchIndex() end
+
+--- @param typeName string
+--- @return boolean
+function UITextEntryInstance:IsA(typeName) end
+
+--- @class GlobalUITextEntry : UIControl @A UIControl which provides an editable text input field. Inherits from [UIControl](uicontrol.md).
+UITextEntry = {}
+
 --- @class Vector2 @A two-component vector that can represent a position or direction.
 --- @field x number @The `x` component of the Vector2.
 --- @field y number @The `y` component of the Vector2.
 --- @field size number @The magnitude of the Vector2.
 --- @field sizeSquared number @The squared magnitude of the Vector2.
 --- @field type string
+--- @operator add(number): Vector2 @ Addition operator.
+--- @operator add(Vector2): Vector2 @ Addition operator.
+--- @operator sub(number): Vector2 @ Subtraction operator.
+--- @operator sub(Vector2): Vector2 @ Subtraction operator.
+--- @operator mul(number): Vector2 @ Multiplication operator
+--- @operator mul(Vector2): Vector2 @ Multiplication operator
+--- @operator div(Vector2): Vector2 @ Division operator.
+--- @operator div(number): Vector2 @ Division operator.
+--- @operator unm: Vector2 @ Returns the negation of the Vector2.
+--- @operator concat(Vector2): number @ Returns the dot product of the Vector2s.
+--- @operator pow(Vector2): number @ Returns the cross product of the Vector2s.
 local Vector2Instance = {}
 --- Returns a new Vector2 with each component the absolute value of the component from this Vector2.
 --- @return Vector2
@@ -3619,6 +3752,17 @@ function Vector2.New(xy) end
 --- @field size number @The magnitude of the Vector3.
 --- @field sizeSquared number @The squared magnitude of the Vector3.
 --- @field type string
+--- @operator add(number): Vector3 @ Addition operator.
+--- @operator add(Vector3): Vector3 @ Addition operator.
+--- @operator sub(number): Vector3 @ Subtraction operator.
+--- @operator sub(Vector3): Vector3 @ Subtraction operator.
+--- @operator mul(number): Vector3 @ Multiplication operator
+--- @operator mul(Vector3): Vector3 @ Multiplication operator
+--- @operator div(Vector3): Vector3 @ Division operator.
+--- @operator div(number): Vector3 @ Division operator.
+--- @operator unm: Vector3 @ Returns the negation of the Vector3.
+--- @operator concat(Vector3): number @ Returns the dot product of the Vector3s.
+--- @operator pow(Vector3): Vector3 @ Returns the cross product of the Vector3s.
 local Vector3Instance = {}
 --- Returns a new Vector3 with each component the absolute value of the component from this Vector3.
 --- @return Vector3
@@ -3665,6 +3809,17 @@ function Vector3.New(xyz) end
 --- @field size number @The magnitude of the Vector4.
 --- @field sizeSquared number @The squared magnitude of the Vector4.
 --- @field type string
+--- @operator add(number): Vector4 @ Addition operator.
+--- @operator add(Vector4): Vector4 @ Addition operator.
+--- @operator sub(number): Vector4 @ Subtraction operator.
+--- @operator sub(Vector4): Vector4 @ Subtraction operator.
+--- @operator mul(number): Vector4 @ Multiplication operator
+--- @operator mul(Vector4): Vector4 @ Multiplication operator
+--- @operator div(Vector4): Vector4 @ Division operator.
+--- @operator div(number): Vector4 @ Division operator.
+--- @operator unm: Vector4 @ Returns the negation of the Vector4.
+--- @operator concat(Vector4): number @ Returns the dot product of the Vector4s.
+--- @operator pow(Vector4): Vector4 @ Returns the cross product of the Vector4s.
 local Vector4Instance = {}
 --- Returns a new Vector4 with each component the absolute value of the component from this Vector4.
 --- @return Vector4
@@ -4215,6 +4370,10 @@ function Environment.IsLocalGame() end
 --- @return boolean
 function Environment.IsHostedGame() end
 
+--- Returns the type of platform on which Core is currently running.
+--- @return PlatformType
+function Environment.GetPlatform() end
+
 --- Returns the Detail Level selected by the player in the Settings menu. Useful for determining whether to spawn templates for VFX or other client-only objects, or selecting templates that are optimized for a particular detail level based on the player's settings.
 --- @return DetailLevel
 function Environment.GetDetailLevel() end
@@ -4529,6 +4688,11 @@ Storage = {}
 --- @param data table
 --- @return number
 function Storage.SizeOfData(data) end
+
+--- Computes and returns the compressed size required for the given `data` table when stored as Player data.
+--- @param data table
+--- @return number
+function Storage.SizeOfCompressedData(data) end
 
 --- Returns the player data associated with `player`. This returns a copy of the data that has already been retrieved for the player, so calling this function does not incur any additional network cost. Changes to the data in the returned table will not be persisted without calling `Storage.SetPlayerData()`.
 --- @param player Player
@@ -5030,13 +5194,13 @@ function World.FindObjectsOverlappingBox(position, boxSize, optionalParameters) 
 --- @return Box
 function World.GetBoundingBoxFromObjects(objects, optionalParameters) end
 
---- @class AbilityFacingMode @Used with `AbilityPhaseSettings` to control how and if a player rotates while executing an ability.
+--- @class AbilityFacingMode : integer @Used with `AbilityPhaseSettings` to control how and if a player rotates while executing an ability.
 AbilityFacingMode = {
     NONE = 0,
     MOVEMENT = 1,
     AIM = 2,
 }
---- @class AbilityPhase @Describes a phase of ability execution.
+--- @class AbilityPhase : integer @Describes a phase of ability execution.
 AbilityPhase = {
     READY = 0,
     CAST = 1,
@@ -5044,12 +5208,12 @@ AbilityPhase = {
     RECOVERY = 3,
     COOLDOWN = 4,
 }
---- @class BlockchainTokenResultCode @Status code returned by functions in the `Blockchain` namespace when retrieving data.
+--- @class BlockchainTokenResultCode : integer @Status code returned by functions in the `Blockchain` namespace when retrieving data.
 BlockchainTokenResultCode = {
     SUCCESS = 0,
     FAILURE = 1,
 }
---- @class BroadcastEventResultCode @Status code returned by functions in the `Events` namespace when broadcasting networked events.
+--- @class BroadcastEventResultCode : integer @Status code returned by functions in the `Events` namespace when broadcasting networked events.
 BroadcastEventResultCode = {
     SUCCESS = 0,
     FAILURE = 1,
@@ -5057,7 +5221,7 @@ BroadcastEventResultCode = {
     EXCEEDED_RATE_WARNING_LIMIT = 3,
     EXCEEDED_RATE_LIMIT = 4,
 }
---- @class BroadcastMessageResultCode @Status code returned by functions in the `Chat` namespace when sending chat messages.
+--- @class BroadcastMessageResultCode : integer @Status code returned by functions in the `Chat` namespace when sending chat messages.
 BroadcastMessageResultCode = {
     SUCCESS = 0,
     FAILURE = 1,
@@ -5065,7 +5229,7 @@ BroadcastMessageResultCode = {
     EXCEEDED_RATE_WARNING_LIMIT = 3,
     EXCEEDED_RATE_LIMIT = 4,
 }
---- @class CameraCaptureResolution @Indicates the resolution of a camera capture render target.
+--- @class CameraCaptureResolution : integer @Indicates the resolution of a camera capture render target.
 CameraCaptureResolution = {
     VERY_SMALL = 0,
     SMALL = 1,
@@ -5073,19 +5237,19 @@ CameraCaptureResolution = {
     LARGE = 3,
     VERY_LARGE = 4,
 }
---- @class Collision @Controls collision of a `CoreObject`.
+--- @class Collision : integer @Controls collision of a `CoreObject`.
 Collision = {
     INHERIT = 0,
     FORCE_ON = 1,
     FORCE_OFF = 2,
 }
---- @class CoreGameEventState @Indicates the status of a CoreGameEvent.
+--- @class CoreGameEventState : integer @Indicates the status of a CoreGameEvent.
 CoreGameEventState = {
-    ACTIVE = 1,
     SCHEDULED = 0,
+    ACTIVE = 1,
     CANCELED = 2,
 }
---- @class CoreModalType @Identifies the type of a Core built-in modal dialog.
+--- @class CoreModalType : integer @Identifies the type of a Core built-in modal dialog.
 CoreModalType = {
     PAUSE_MENU = 1,
     CHARACTER_PICKER = 2,
@@ -5093,7 +5257,7 @@ CoreModalType = {
     EMOTE_PICKER = 4,
     SOCIAL_MENU = 6,
 }
---- @class CurveExtrapolation @Specifies how curve values are extrapolated outside the beginning and end of a curve.
+--- @class CurveExtrapolation : integer @Specifies how curve values are extrapolated outside the beginning and end of a curve.
 CurveExtrapolation = {
     CYCLE = 0,
     CYCLE_WITH_OFFSET = 1,
@@ -5101,13 +5265,13 @@ CurveExtrapolation = {
     LINEAR = 3,
     CONSTANT = 4,
 }
---- @class CurveInterpolation @Specifies how curve values are interpolated between curve keys.
+--- @class CurveInterpolation : integer @Specifies how curve values are interpolated between curve keys.
 CurveInterpolation = {
     LINEAR = 0,
     CONSTANT = 1,
     CUBIC = 2,
 }
---- @class DamageReason @Indicates the reason a player is taking damage.
+--- @class DamageReason : integer @Indicates the reason a player is taking damage.
 DamageReason = {
     UNKNOWN = 0,
     COMBAT = 1,
@@ -5115,20 +5279,20 @@ DamageReason = {
     MAP = 3,
     NPC = 4,
 }
---- @class DetailLevel @Indicates the desired detail level selected by the player in the Settings menu.
+--- @class DetailLevel : integer @Indicates the desired detail level selected by the player in the Settings menu.
 DetailLevel = {
     LOW = 0,
     MEDIUM = 1,
     HIGH = 2,
     ULTRA = 3,
 }
---- @class FacingMode @Describes how the player character determines which direction it should face.
+--- @class FacingMode : integer @Describes how the player character determines which direction it should face.
 FacingMode = {
     FACE_AIM_WHEN_ACTIVE = 0,
     FACE_AIM_ALWAYS = 1,
     FACE_MOVEMENT = 2,
 }
---- @class IKAnchorType @Which bone this IKAnchor applies to.
+--- @class IKAnchorType : integer @Which bone this IKAnchor applies to.
 IKAnchorType = {
     LEFT_HAND = 0,
     RIGHT_HAND = 1,
@@ -5136,33 +5300,33 @@ IKAnchorType = {
     LEFT_FOOT = 3,
     RIGHT_FOOT = 4,
 }
---- @class ImageTileType @How a UI Texture is tiled or stretched.
+--- @class ImageTileType : integer @How a UI Texture is tiled or stretched.
 ImageTileType = {
     NONE = 0,
     HORIZONTAL = 1,
     VERTICAL = 2,
     BOTH = 3,
 }
---- @class InputType @Specifies a type or method of user input.
+--- @class InputType : integer @Specifies a type or method of user input.
 InputType = {
     KEYBOARD_AND_MOUSE = 0,
     CONTROLLER = 1,
     TOUCH = 2,
 }
---- @class LeaderboardType @Identifies a specific leaderboard type associated with a leaderboard key.
+--- @class LeaderboardType : integer @Identifies a specific leaderboard type associated with a leaderboard key.
 LeaderboardType = {
     GLOBAL = 0,
     DAILY = 1,
     WEEKLY = 2,
     MONTHLY = 3,
 }
---- @class LookControlMode @Defines how player input controls the player's look direction.
+--- @class LookControlMode : integer @Defines how player input controls the player's look direction.
 LookControlMode = {
     NONE = 0,
     RELATIVE = 1,
     LOOK_AT_CURSOR = 2,
 }
---- @class MouseButton @Identifies a mouse button involved in an input event.
+--- @class MouseButton : integer @Identifies a mouse button involved in an input event.
 MouseButton = {
     LEFT = 1,
     RIGHT = 2,
@@ -5170,7 +5334,7 @@ MouseButton = {
     THUMB_1 = 4,
     THUMB_2 = 5,
 }
---- @class MovementControlMode @Defines how player input controls the player's movement direction.
+--- @class MovementControlMode : integer @Defines how player input controls the player's movement direction.
 MovementControlMode = {
     NONE = 0,
     LOOK_RELATIVE = 1,
@@ -5178,7 +5342,7 @@ MovementControlMode = {
     FACING_RELATIVE = 3,
     FIXED_AXES = 4,
 }
---- @class MovementMode @Describes how the player character is currently moving.
+--- @class MovementMode : integer @Describes how the player character is currently moving.
 MovementMode = {
     NONE = 0,
     WALKING = 1,
@@ -5186,17 +5350,17 @@ MovementMode = {
     SWIMMING = 4,
     FLYING = 5,
 }
---- @class NetReferenceType @Indicates the specific type of a `NetReference`.
+--- @class NetReferenceType : integer @Indicates the specific type of a `NetReference`.
 NetReferenceType = {
+    UNKNOWN = 0,
     LEADERBOARD = 1,
-    SHARED_STORAGE = 2,
     SHARED_PLAYER_STORAGE = 2,
+    SHARED_STORAGE = 2,
+    CREATOR_PERK = 3,
     CONCURRENT_SHARED_PLAYER_STORAGE = 4,
     CONCURRENT_CREATOR_STORAGE = 5,
-    CREATOR_PERK = 3,
-    UNKNOWN = 0,
 }
---- @class NetworkContextType @Indicates the network context to use when spawning an object.
+--- @class NetworkContextType : integer @Indicates the network context to use when spawning an object.
 NetworkContextType = {
     NETWORKED = 2,
     CLIENT_CONTEXT = 3,
@@ -5204,12 +5368,19 @@ NetworkContextType = {
     STATIC_CONTEXT = 5,
     LOCAL_CONTEXT = 6,
 }
---- @class Orientation @Determines the orientation of a `UIScrollPanel`.
+--- @class Orientation : integer @Determines the orientation of a `UIScrollPanel`.
 Orientation = {
     HORIZONTAL = 0,
     VERTICAL = 1,
 }
---- @class PlayerTransferReason @Indicates how a player joined or left a game.
+--- @class PlatformType : integer @The type of platform that Core is running on.
+PlatformType = {
+    UNKNOWN = 0,
+    WINDOWS = 1,
+    IOS = 2,
+    LINUX = 3,
+}
+--- @class PlayerTransferReason : integer @Indicates how a player joined or left a game.
 PlayerTransferReason = {
     UNKNOWN = 0,
     CHARACTER = 1,
@@ -5222,21 +5393,21 @@ PlayerTransferReason = {
     EXIT = 8,
     PORTAL_SCENE = 9,
 }
---- @class PrivateNetworkedDataResultCode @Status code returned when setting private player data.
+--- @class PrivateNetworkedDataResultCode : integer @Status code returned when setting private player data.
 PrivateNetworkedDataResultCode = {
     SUCCESS = 0,
     FAILURE = 1,
     EXCEEDED_SIZE_LIMIT = 2,
 }
---- @class ProgressBarFillType @Controls the direction in which the progress bar fills.
+--- @class ProgressBarFillType : integer @Controls the direction in which the progress bar fills.
 ProgressBarFillType = {
     LEFT_TO_RIGHT = 0,
     RIGHT_TO_LEFT = 1,
+    FROM_CENTER = 2,
     TOP_TO_BOTTOM = 3,
     BOTTOM_TO_TOP = 4,
-    FROM_CENTER = 2,
 }
---- @class RespawnMode @Specifies whether a player respawns automatically, and how a start point is selected when they spawn.
+--- @class RespawnMode : integer @Specifies whether a player respawns automatically, and how a start point is selected when they spawn.
 RespawnMode = {
     NONE = 0,
     IN_PLACE = 1,
@@ -5246,33 +5417,33 @@ RespawnMode = {
     FARTHEST_FROM_ENEMY = 5,
     RANDOM = 6,
 }
---- @class RewardsDialogTab @Specifies a tab on the rewards dialog window.
+--- @class RewardsDialogTab : integer @Specifies a tab on the rewards dialog window.
 RewardsDialogTab = {
     QUESTS = 1,
     GAMES = 2,
 }
---- @class RotationMode @Camera rotation mode.
+--- @class RotationMode : integer @Camera rotation mode.
 RotationMode = {
     CAMERA = 0,
     NONE = 1,
     LOOK_ANGLE = 2,
 }
---- @class SpawnMode @Specifies how a start point is selected when a player spawns.
+--- @class SpawnMode : integer @Specifies how a start point is selected when a player spawns.
 SpawnMode = {
     RANDOM = 0,
     ROUND_ROBIN = 1,
     FARTHEST_FROM_OTHER_PLAYERS = 2,
     FARTHEST_FROM_ENEMY = 3,
 }
---- @class StorageResultCode @Status code returned by calls to update a player's storage data.
+--- @class StorageResultCode : integer @Status code returned by calls to update a player's storage data.
 StorageResultCode = {
     SUCCESS = 0,
-    FAILURE = 2,
     STORAGE_DISABLED = 1,
+    FAILURE = 2,
     EXCEEDED_SIZE_LIMIT = 3,
     REQUEST_ALREADY_QUEUED = 4,
 }
---- @class TaskStatus @Indicates the status of a script `Task`.
+--- @class TaskStatus : integer @Indicates the status of a script `Task`.
 TaskStatus = {
     UNINITIALIZED = 0,
     SCHEDULED = 1,
@@ -5283,13 +5454,13 @@ TaskStatus = {
     CANCELED = 6,
     BLOCKED = 7,
 }
---- @class TextJustify @Indicates horizontal alignment of a `UIText` element.
+--- @class TextJustify : integer @Indicates horizontal alignment of a `UIText` element.
 TextJustify = {
     LEFT = 0,
     CENTER = 1,
     RIGHT = 2,
 }
---- @class UIPivot @Specifies the pivot point of a `UIControl`.
+--- @class UIPivot : integer @Specifies the pivot point of a `UIControl`.
 UIPivot = {
     TOP_LEFT = 0,
     TOP_CENTER = 1,
@@ -5302,23 +5473,23 @@ UIPivot = {
     BOTTOM_RIGHT = 8,
     CUSTOM = 9,
 }
---- @class Visibility @Controls visibility of a `CoreObject`.
+--- @class Visibility : integer @Controls visibility of a `CoreObject`.
 Visibility = {
     INHERIT = 0,
     FORCE_ON = 1,
     FORCE_OFF = 2,
 }
---- @class VoiceChannelType @Indicates the type of a voice chat channel.
+--- @class VoiceChannelType : integer @Indicates the type of a voice chat channel.
 VoiceChannelType = {
     NORMAL = 0,
     POSITIONAL = 1,
 }
---- @class VoiceChatMethod @Indicates the setting a player uses to activate voice chat.
+--- @class VoiceChatMethod : integer @Indicates the setting a player uses to activate voice chat.
 VoiceChatMethod = {
     PUSH_TO_TALK = 0,
     DETECT_SPEAKING = 2,
 }
---- @class VoiceChatMode @Controls whether voice chat is enabled in the game.
+--- @class VoiceChatMode : integer @Controls whether voice chat is enabled in the game.
 VoiceChatMode = {
     NONE = 0,
     TEAM = 1,
