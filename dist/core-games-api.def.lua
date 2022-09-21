@@ -5495,7 +5495,7 @@ VoiceChatMode = {
     TEAM = 1,
     ALL = 2,
 }
---- @type CoreObject
+--- @type Script|ScriptAsset
 script = nil
 
 --- Returns the time in seconds (floating point) since the game started on the server.
