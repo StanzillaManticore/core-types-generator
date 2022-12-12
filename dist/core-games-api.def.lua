@@ -4478,6 +4478,7 @@ local GameInstance = {}
 --- @field roundStartEvent Event @Fired when StartRound is called on game.
 --- @field roundEndEvent Event @Fired when EndRound is called on game.
 --- @field teamScoreChangedEvent Event @Fired whenever any team's score changes. This is fired once per team who's score changes.
+--- @field postCameraUpdateEvent Event @undefined
 Game = {}
 --- Returns the local player.
 --- @return Player
